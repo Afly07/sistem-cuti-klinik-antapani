@@ -1,107 +1,134 @@
 @extends('layouts.app')
-@section('title', 'Laporan & Rekapitulasi Cuti Tahunan')
-@section('subtitle', 'Analisis riwayat pengajuan cuti seluruh pegawai Klinik Utama Medika Antapani beserta fitur cetak dan ekspor CSV')
+@section('title', 'Laporan & Rekapitulasi Cuti')
 
 @section('content')
-<!-- Statistik Ringkas -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <span class="text-[11px] font-bold uppercase text-slate-400">Total Pengajuan</span>
-        <p class="text-2xl font-extrabold text-slate-900 mt-1">{{ $statistik['total'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl border border-emerald-200 p-4 shadow-sm">
-        <span class="text-[11px] font-bold uppercase text-emerald-700">Disetujui Akhir (HR)</span>
-        <p class="text-2xl font-extrabold text-emerald-600 mt-1">{{ $statistik['disetujui'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl border border-amber-200 p-4 shadow-sm">
-        <span class="text-[11px] font-bold uppercase text-amber-700">Dalam Proses Verifikasi</span>
-        <p class="text-2xl font-extrabold text-amber-600 mt-1">{{ $statistik['menunggu'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl border border-rose-200 p-4 shadow-sm">
-        <span class="text-[11px] font-bold uppercase text-rose-700">Ditolak / Dibatalkan</span>
-        <p class="text-2xl font-extrabold text-rose-600 mt-1">{{ $statistik['ditolak_batal'] }}</p>
-    </div>
-</div>
+@php
+    $daftarCuti = $dataCuti ?? $laporan ?? collect();
+    $daftarBagian = $daftarBagian ?? $bagianOrganisasi ?? collect();
 
-<!-- Filter & Tombol Ekspor -->
-<div class="no-print bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm mb-6 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-    <form action="{{ route('laporan.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-4 gap-3 flex-1">
-        <div>
-            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Status Pengajuan</label>
-            <select name="status" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs">
-                <option value="semua">Semua Status</option>
-                @foreach(['draf', 'menunggu_atasan', 'menunggu_hr', 'disetujui', 'ditolak', 'dibatalkan'] as $st)
-                    <option value="{{ $st }}" {{ request('status') === $st ? 'selected' : '' }}>{{ strtoupper(str_replace('_', ' ', $st)) }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Bagian Organisasi</label>
-            <select name="bagian_organisasi_id" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs">
-                <option value="">Semua Bagian / Instalasi</option>
-                @foreach($daftarBagian as $b)
-                    <option value="{{ $b->id }}" {{ (string) request('bagian_organisasi_id') === (string) $b->id ? 'selected' : '' }}>{{ $b->nama }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tahun Cuti</label>
-            <input type="number" name="tahun" value="{{ request('tahun', date('Y')) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs">
-        </div>
-        <div class="flex items-end gap-2">
-            <button type="submit" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition">Terapkan Filter</button>
-            <a href="{{ route('laporan.index') }}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold">Reset</a>
-        </div>
-    </form>
+    $statTotal = $statistik['total'] ?? $daftarCuti->count();
+    $statDisetujui = $statistik['disetujui'] ?? $daftarCuti->where('status', 'disetujui')->count();
+    $statMenunggu = $statistik['menunggu'] ?? $daftarCuti->whereIn('status', ['menunggu_atasan', 'menunggu_hr'])->count();
+    $statDitolakBatal = $statistik['ditolak_batal'] ?? $daftarCuti->whereIn('status', ['ditolak', 'dibatalkan'])->count();
+@endphp
 
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <h1 class="text-xl font-bold text-slate-900">Laporan & Rekapitulasi Cuti</h1>
     <div class="flex items-center gap-2">
-        <button type="button" onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-300 transition">
-            Cetak Laporan
+        <button type="button" onclick="window.print()" class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium">
+            Cetak
         </button>
-        <a href="{{ route('pengajuan.eksporCsv', request()->query()) }}" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-sm transition">
-            Unduh Ekspor CSV
+        <a href="{{ route('pengajuan.eksporCsv', request()->query()) }}" class="px-4 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold">
+            Ekspor CSV
         </a>
     </div>
 </div>
 
-<!-- Tabel Rekapitulasi -->
-<div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-    <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-        <h5 class="text-sm font-bold">Tabel Rekapitulasi Pengajuan Cuti Pegawai</h5>
-        <span class="text-xs text-slate-400">Dicetak: {{ date('d/m/Y H:i') }}</span>
+<!-- Ringkasan Statistik -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <p class="text-sm text-slate-500">Total Pengajuan</p>
+        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $statTotal }}</p>
     </div>
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <p class="text-sm text-slate-500">Disetujui</p>
+        <p class="text-2xl font-bold text-teal-700 mt-1">{{ $statDisetujui }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <p class="text-sm text-slate-500">Menunggu</p>
+        <p class="text-2xl font-bold text-amber-600 mt-1">{{ $statMenunggu }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <p class="text-sm text-slate-500">Ditolak / Batal</p>
+        <p class="text-2xl font-bold text-rose-600 mt-1">{{ $statDitolakBatal }}</p>
+    </div>
+</div>
+
+<!-- Filter -->
+<form action="{{ route('laporan.index') }}" method="GET" class="bg-white rounded-xl border border-slate-200 p-4 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+        <select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <option value="semua">Semua Status</option>
+            @foreach(['draf', 'menunggu_atasan', 'menunggu_hr', 'disetujui', 'ditolak', 'dibatalkan'] as $st)
+                <option value="{{ $st }}" {{ request('status') === $st ? 'selected' : '' }}>
+                    {{ ucfirst(str_replace('_', ' ', $st)) }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Bagian</label>
+        <select name="bagian_organisasi_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <option value="">Semua Bagian</option>
+            @foreach($daftarBagian as $b)
+                <option value="{{ $b->id }}" {{ (string) request('bagian_organisasi_id') === (string) $b->id ? 'selected' : '' }}>
+                    {{ $b->nama }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Tahun</label>
+        <input type="number" name="tahun" value="{{ request('tahun', date('Y')) }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+    </div>
+    <div class="flex gap-2">
+        <button type="submit" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium">Filter</button>
+        <a href="{{ route('laporan.index') }}" class="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm font-medium">Reset</a>
+    </div>
+</form>
+
+<!-- Tabel Data Laporan -->
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm">
-            <thead>
-                <tr class="bg-slate-50 text-slate-600 text-xs uppercase border-b border-slate-200">
-                    <th class="py-3.5 px-4 font-bold">No. Pengajuan</th>
-                    <th class="py-3.5 px-4 font-bold">NIP</th>
-                    <th class="py-3.5 px-4 font-bold">Nama Pegawai</th>
-                    <th class="py-3.5 px-4 font-bold">Bagian Organisasi</th>
-                    <th class="py-3.5 px-4 font-bold">Tanggal Cuti</th>
-                    <th class="py-3.5 px-4 font-bold">Alasan</th>
-                    <th class="py-3.5 px-4 font-bold">Status</th>
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                <tr>
+                    <th class="py-3 px-4 font-semibold">Nomor</th>
+                    <th class="py-3 px-4 font-semibold">NIP</th>
+                    <th class="py-3 px-4 font-semibold">Nama Pegawai</th>
+                    <th class="py-3 px-4 font-semibold">Bagian</th>
+                    <th class="py-3 px-4 font-semibold">Tanggal Cuti</th>
+                    <th class="py-3 px-4 font-semibold">Alasan</th>
+                    <th class="py-3 px-4 font-semibold">Status</th>
+                    <th class="py-3 px-4 font-semibold">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-                @forelse($dataCuti as $row)
-                <tr class="hover:bg-slate-50/80">
-                    <td class="py-3 px-4 font-mono text-xs font-bold text-slate-800">
-                        <a href="{{ route('pengajuan.show', $row->id) }}" class="hover:text-teal-600 underline">{{ $row->nomor_pengajuan }}</a>
+                @forelse($daftarCuti as $row)
+                <tr>
+                    <td class="py-3 px-4 font-medium text-slate-900">
+                        <a href="{{ route('pengajuan.show', $row->id) }}" class="text-teal-700 hover:underline">{{ $row->nomor_pengajuan }}</a>
                     </td>
-                    <td class="py-3 px-4 font-mono text-xs text-slate-600">{{ $row->pegawai->nomor_induk ?? '-' }}</td>
-                    <td class="py-3 px-4 text-xs font-bold text-slate-900">{{ $row->pegawai->nama ?? '-' }}</td>
-                    <td class="py-3 px-4 text-xs text-slate-600">{{ $row->pegawai->bagianOrganisasi->nama ?? '-' }}</td>
-                    <td class="py-3 px-4 text-xs font-bold text-teal-700">{{ $row->tanggal_cuti }}</td>
-                    <td class="py-3 px-4 text-xs text-slate-600 max-w-xs">{{ $row->alasan }}</td>
+                    <td class="py-3 px-4 text-slate-600">{{ $row->pegawai->nomor_induk ?? '-' }}</td>
+                    <td class="py-3 px-4 font-medium text-slate-900">{{ $row->pegawai->nama ?? '-' }}</td>
+                    <td class="py-3 px-4 text-slate-600">{{ $row->pegawai->bagianOrganisasi->nama ?? '-' }}</td>
+                    <td class="py-3 px-4 text-slate-700">{{ $row->tanggal_cuti }}</td>
+                    <td class="py-3 px-4 text-slate-600">{{ $row->alasan }}</td>
                     <td class="py-3 px-4">
-                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-slate-100 text-slate-700">
+                        <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 capitalize">
                             {{ str_replace('_', ' ', $row->status) }}
                         </span>
                     </td>
+                    <td class="py-3 px-4 text-right whitespace-nowrap">
+                        @can('batalkanOlehHr', $row)
+                        <form action="{{ route('pengajuan.batalkanOlehHr', $row->id) }}" method="POST" class="inline"
+                              onsubmit="return confirm('Batalkan cuti {{ $row->nomor_pengajuan }} dan kembalikan 1 hari saldo?')">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="text-rose-600 hover:underline text-sm font-medium">
+                                Batalkan & Refund
+                            </button>
+                        </form>
+                        @else
+                            <a href="{{ route('pengajuan.show', $row->id) }}" class="text-teal-700 hover:underline text-sm font-medium">
+                                Detail
+                            </a>
+                        @endcan
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="py-8 text-center text-xs text-slate-400">Tidak ada data pengajuan cuti yang sesuai filter.</td></tr>
+                <tr><td colspan="8" class="py-8 text-center text-slate-400">Tidak ada data pengajuan cuti.</td></tr>
                 @endforelse
             </tbody>
         </table>

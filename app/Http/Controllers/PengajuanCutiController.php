@@ -415,58 +415,30 @@ class PengajuanCutiController extends Controller
     {
         abort_unless($request->user()->peran->kode === 'admin_hr', 403);
 
-        $query = PengajuanCuti::with(['pegawai.bagianOrganisasi', 'atasanPenyetuju', 'persetujuan'])
-            ->latest('diajukan_pada');
+        $query = PengajuanCuti::with(['pegawai.bagianOrganisasi', 'atasanPenyetuju', 'persetujuan.pemberiKeputusan']);
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && $request->status !== 'semua') {
             $query->where('status', $request->status);
-        }
-
-        if ($request->filled('bagian_id')) {
-            $query->whereHas('pegawai', fn($q) => $q->where('bagian_organisasi_id', $request->bagian_id));
         }
 
         if ($request->filled('bagian_organisasi_id')) {
             $query->whereHas('pegawai', fn($q) => $q->where('bagian_organisasi_id', $request->bagian_organisasi_id));
         }
 
-        if ($request->filled('tanggal_mulai')) {
-            $query->whereDate('tanggal_cuti', '>=', $request->tanggal_mulai);
+        if ($request->filled('tahun')) {
+            $query->whereYear('tanggal_cuti', $request->tahun);
         }
 
-        if ($request->filled('tanggal_selesai')) {
-            $query->whereDate('tanggal_cuti', '<=', $request->tanggal_selesai);
-        }
+        $dataCuti     = $query->latest('diajukan_pada')->get();
+        $daftarBagian = BagianOrganisasi::orderBy('nama')->get();
 
-        $dataCuti         = $query->get();
-        $pengajuan        = $dataCuti;
-        $laporan          = $dataCuti;
-        $riwayat          = $dataCuti;
-        $bagianList       = \App\Models\BagianOrganisasi::orderBy('nama')->get();
-        $bagianOrganisasi = $bagianList;
-
-        $ringkasan = [
-            'total'           => PengajuanCuti::count(),
-            'disetujui'       => PengajuanCuti::where('status', 'disetujui')->count(),
-            'ditolak'         => PengajuanCuti::where('status', 'ditolak')->count(),
-            'dibatalkan'      => PengajuanCuti::where('status', 'dibatalkan')->count(),
-            'menunggu'        => PengajuanCuti::whereIn('status', ['menunggu_atasan', 'menunggu_hr'])->count(),
-            'menunggu_atasan' => PengajuanCuti::where('status', 'menunggu_atasan')->count(),
-            'menunggu_hr'     => PengajuanCuti::where('status', 'menunggu_hr')->count(),
+        $statistik = [
+            'total'         => $dataCuti->count(),
+            'disetujui'     => $dataCuti->where('status', 'disetujui')->count(),
+            'menunggu'      => $dataCuti->whereIn('status', ['menunggu_atasan', 'menunggu_hr'])->count(),
+            'ditolak_batal' => $dataCuti->whereIn('status', ['ditolak', 'dibatalkan'])->count(),
         ];
 
-        if (view()->exists('laporan.index')) {
-            return view('laporan.index', compact(
-                'dataCuti',
-                'pengajuan',
-                'laporan',
-                'riwayat',
-                'bagianList',
-                'bagianOrganisasi',
-                'ringkasan'
-            ));
-        }
-
-        return redirect()->route('persetujuan.hr');
+        return view('laporan.index', compact('dataCuti', 'daftarBagian', 'statistik'));
     }
 }

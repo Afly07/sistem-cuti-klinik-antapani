@@ -111,6 +111,20 @@
                 </div>
             </div>
 
+            @can('batalkanOlehHr', $pengajuan)
+            <div class="pt-4 mt-4 border-t border-slate-200 flex items-center justify-between gap-4">
+                <p class="text-sm text-slate-600">Pembatalan darurat oleh Admin HR (mengembalikan 1 hari saldo cuti).</p>
+                <form action="{{ route('pengajuan.batalkanOlehHr', $pengajuan->id) }}" method="POST"
+                    onsubmit="return confirm('Batalkan cuti yang sudah disetujui ini dan kembalikan 1 hari saldo pegawai?')">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium">
+                        Batalkan & Kembalikan Saldo
+                    </button>
+                </form>
+            </div>
+            @endcan
+
             @can('setujuiAtasan', $pengajuan)
             <div class="pt-4 border-t border-slate-200">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-cyan-700 mb-2">Form Keputusan Tahap Atasan</h4>
