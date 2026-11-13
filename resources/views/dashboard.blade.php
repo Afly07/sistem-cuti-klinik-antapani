@@ -2,111 +2,86 @@
 @section('title', 'Dashboard Cuti')
 
 @section('content')
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
     <div>
-        <h1 class="text-xl font-bold text-slate-900">Ringkasan Cuti Tahun {{ date('Y') }}</h1>
-        <p class="text-sm text-slate-500">{{ auth()->user()->pegawai->nama ?? auth()->user()->nama }} — {{ auth()->user()->pegawai->bagianOrganisasi->nama ?? '-' }}</p>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+            {{ auth()->user()->pegawai->nama ?? auth()->user()->nama }}
+        </h1>
+        <p class="text-base text-slate-600 mt-0.5">
+            {{ auth()->user()->pegawai->bagianOrganisasi->nama ?? 'Klinik Utama Medika Antapani' }}
+        </p>
     </div>
-    <a href="{{ route('pengajuan.create') }}" class="inline-flex justify-center px-4 py-2 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold">
-        + Ajukan Cuti
+    <a href="{{ route('pengajuan.create') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold transition">
+        Ajukan Cuti Baru
     </a>
 </div>
 
-<!-- 3 Kartu Saldo -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <p class="text-sm text-slate-500">Jatah Tahunan</p>
-        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $saldo->jatah_awal ?? 12 }} Hari</p>
+<!-- Panel Saldo Menyatu -->
+<div class="bg-white rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-10">
+    <div class="p-6">
+        <p class="text-sm font-medium text-slate-500">Jatah Cuti {{ date('Y') }}</p>
+        <p class="text-3xl font-bold text-slate-900 tabular-nums mt-2">{{ $saldo->jatah_awal ?? 12 }} Hari</p>
     </div>
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <p class="text-sm text-slate-500">Sudah Terpakai</p>
-        <p class="text-2xl font-bold text-amber-600 mt-1">{{ $saldo->terpakai ?? 0 }} Hari</p>
+    <div class="p-6">
+        <p class="text-sm font-medium text-slate-500">Terpakai</p>
+        <p class="text-3xl font-bold text-orange-600 tabular-nums mt-2">{{ $saldo->terpakai ?? 0 }} Hari</p>
     </div>
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-        <p class="text-sm text-slate-500">Saldo Tersedia</p>
-        <p class="text-2xl font-bold text-teal-700 mt-1">{{ $saldo->saldo_tersedia ?? 12 }} Hari</p>
-    </div>
-</div>
-
-<!-- Pengajuan Terbaru Saya -->
-<div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-8">
-    <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-        <h2 class="text-base font-semibold text-slate-900">Pengajuan Terbaru Saya</h2>
-        <a href="{{ route('pengajuan.index') }}" class="text-sm text-teal-700 hover:underline font-medium">Lihat Semua</a>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                <tr>
-                    <th class="py-3 px-4 font-semibold">Nomor</th>
-                    <th class="py-3 px-4 font-semibold">Tanggal Cuti</th>
-                    <th class="py-3 px-4 font-semibold">Alasan</th>
-                    <th class="py-3 px-4 font-semibold">Status</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse($riwayatTerbaru ?? [] as $item)
-                <tr>
-                    <td class="py-3 px-4 font-medium text-slate-900">{{ $item->nomor_pengajuan }}</td>
-                    <td class="py-3 px-4 text-slate-700">{{ $item->tanggal_cuti }}</td>
-                    <td class="py-3 px-4 text-slate-600">{{ $item->alasan }}</td>
-                    <td class="py-3 px-4">
-                        <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 capitalize">
-                            {{ str_replace('_', ' ', $item->status) }}
-                        </span>
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="4" class="py-6 text-center text-slate-400">Belum ada pengajuan cuti.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+    <div class="p-6">
+        <p class="text-sm font-medium text-slate-500">Saldo Tersedia</p>
+        <p class="text-3xl font-bold text-cyan-700 tabular-nums mt-2">{{ $saldo->saldo_tersedia ?? 12 }} Hari</p>
     </div>
 </div>
 
-<!-- Monitoring Staf (Atasan & HR) -->
+<!-- Monitoring Sisa Saldo Cuti Staf (Atasan & HR) -->
 @if(in_array(auth()->user()->peran->kode ?? '', ['atasan', 'admin_hr']))
-<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-    <div class="px-5 py-4 border-b border-slate-200">
-        <h2 class="text-base font-semibold text-slate-900">Monitoring Sisa Saldo Cuti Staf ({{ date('Y') }})</h2>
+<section>
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-slate-900">Monitoring Sisa Saldo Cuti Staf</h2>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                <tr>
-                    <th class="py-3 px-4 font-semibold">NIP</th>
-                    <th class="py-3 px-4 font-semibold">Nama Staf</th>
-                    <th class="py-3 px-4 font-semibold">Bagian</th>
-                    <th class="py-3 px-4 font-semibold">Terpakai</th>
-                    <th class="py-3 px-4 font-semibold">Sisa Cuti</th>
-                    <th class="py-3 px-4 font-semibold">Keterangan</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @foreach($stafBawahan as $staf)
-                    @php
-                        $s = $staf->saldoCuti->first();
-                        $terpakai = $s->terpakai ?? 0;
-                        $sisa = $s->saldo_tersedia ?? 12;
-                    @endphp
+
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-700 border-b border-slate-200">
                     <tr>
-                        <td class="py-3 px-4 text-slate-600">{{ $staf->nomor_induk }}</td>
-                        <td class="py-3 px-4 font-medium text-slate-900">{{ $staf->nama }}</td>
-                        <td class="py-3 px-4 text-slate-600">{{ $staf->bagianOrganisasi->nama ?? '-' }}</td>
-                        <td class="py-3 px-4 text-slate-700">{{ $terpakai }} Hari</td>
-                        <td class="py-3 px-4 font-semibold text-teal-700">{{ $sisa }} Hari</td>
-                        <td class="py-3 px-4">
-                            @if($terpakai == 0)
-                                <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-800">Belum Pernah Cuti</span>
-                            @else
-                                <span class="px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-800">Aktif Cuti</span>
-                            @endif
-                        </td>
+                        <th class="py-3.5 px-5 font-semibold">NIP</th>
+                        <th class="py-3.5 px-5 font-semibold">Nama Staf</th>
+                        <th class="py-3.5 px-5 font-semibold">Bagian</th>
+                        <th class="py-3.5 px-5 font-semibold">Terpakai</th>
+                        <th class="py-3.5 px-5 font-semibold">Sisa Saldo</th>
+                        <th class="py-3.5 px-5 font-semibold">Status</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @foreach($stafBawahan as $staf)
+                        @php
+                            $s = $staf->saldoCuti->first();
+                            $terpakai = $s->terpakai ?? 0;
+                            $sisa = $s->saldo_tersedia ?? 12;
+                        @endphp
+                        <tr class="hover:bg-slate-50/70">
+                            <td class="py-4 px-5 text-slate-600 tabular-nums">{{ $staf->nomor_induk }}</td>
+                            <td class="py-4 px-5 font-semibold text-slate-900">{{ $staf->nama }}</td>
+                            <td class="py-4 px-5 text-slate-600">{{ $staf->bagianOrganisasi->nama ?? '-' }}</td>
+                            <td class="py-4 px-5 text-slate-700 tabular-nums">{{ $terpakai }} Hari</td>
+                            <td class="py-4 px-5 font-bold text-cyan-700 tabular-nums">{{ $sisa }} Hari</td>
+                            <td class="py-4 px-5">
+                                @if($terpakai == 0)
+                                    <span class="inline-block px-3 py-1 rounded-md text-sm font-medium bg-orange-50 text-orange-800">
+                                        Belum Pernah Cuti
+                                    </span>
+                                @else
+                                    <span class="inline-block px-3 py-1 rounded-md text-sm font-medium bg-cyan-50 text-cyan-800">
+                                        Aktif Cuti
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
+</section>
 @endif
 @endsection

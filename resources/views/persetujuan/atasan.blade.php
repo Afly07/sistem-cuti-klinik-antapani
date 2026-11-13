@@ -1,39 +1,39 @@
-{{-- resources/views/persetujuan/atasan.blade.php --}}
 @extends('layouts.app')
-@section('title', 'Persetujuan Cuti Bawahan (Tahap Atasan)')
+@section('title', 'Persetujuan Atasan')
 
 @section('content')
-<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-    <div class="px-6 py-4 bg-slate-900 text-white"><h5 class="text-sm font-bold">Daftar Pengajuan Cuti Bawahan (Tahap Atasan)</h5></div>
+<h1 class="text-2xl font-bold text-slate-900 tracking-tight mb-6">Persetujuan Cuti Bawahan</h1>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm">
-            <thead>
-                <tr class="bg-slate-50 text-xs uppercase border-b border-slate-200">
-                    <th class="py-3 px-4">No. Pengajuan</th>
-                    <th class="py-3 px-4">Nama Staf</th>
-                    <th class="py-3 px-4">Tanggal Cuti</th>
-                    <th class="py-3 px-4">Alasan</th>
-                    <th class="py-3 px-4">Aksi Keputusan Atasan</th>
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-700 border-b border-slate-200">
+                <tr>
+                    <th class="py-3.5 px-5 font-semibold">Nomor</th>
+                    <th class="py-3.5 px-5 font-semibold">Nama Staf</th>
+                    <th class="py-3.5 px-5 font-semibold">Tanggal Cuti</th>
+                    <th class="py-3.5 px-5 font-semibold">Alasan</th>
+                    <th class="py-3.5 px-5 font-semibold">Keputusan</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-slate-200">
                 @forelse($antreanAtasan as $ajuan)
                 <tr>
-                    <td class="py-3 px-4 font-mono text-xs font-bold">{{ $ajuan->nomor_pengajuan }}</td>
-                    <td class="py-3 px-4 text-xs font-bold">{{ $ajuan->pegawai->nama ?? '-' }}</td>
-                    <td class="py-3 px-4 text-xs">{{ $ajuan->tanggal_cuti }}</td>
-                    <td class="py-3 px-4 text-xs">{{ $ajuan->alasan }}</td>
-                    <td class="py-3 px-4">
+                    <td class="py-4 px-5 font-medium tabular-nums">{{ $ajuan->nomor_pengajuan }}</td>
+                    <td class="py-4 px-5 font-semibold text-slate-900">{{ $ajuan->pegawai->nama ?? '-' }}</td>
+                    <td class="py-4 px-5 text-slate-800 tabular-nums">{{ $ajuan->tanggal_cuti }}</td>
+                    <td class="py-4 px-5 text-slate-600">{{ $ajuan->alasan }}</td>
+                    <td class="py-4 px-5">
                         <form action="{{ route('pengajuan.keputusanAtasan', $ajuan->id) }}" method="POST" class="flex items-center gap-2">
                             @csrf @method('PATCH')
-                            <input type="text" name="catatan" class="rounded-xl border border-slate-300 px-3 py-1 text-xs" placeholder="Catatan...">
-                            <button name="keputusan" value="disetujui" class="px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs font-bold">Setujui</button>
-                            <button name="keputusan" value="ditolak" class="px-3 py-1 rounded-xl bg-rose-600 text-white text-xs font-bold">Tolak</button>
+                            <input type="text" name="catatan" placeholder="Catatan..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm w-44 focus:border-cyan-600 outline-none">
+                            <button name="keputusan" value="disetujui" class="px-4 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-semibold">Setujui</button>
+                            <button name="keputusan" value="ditolak" class="px-4 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50 text-sm font-semibold">Tolak</button>
                         </form>
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">Tidak ada pengajuan bawahan.</td></tr>
+                <tr><td colspan="5" class="py-10 text-center text-base text-slate-400">Tidak ada pengajuan yang menunggu keputusan.</td></tr>
                 @endforelse
             </tbody>
         </table>
